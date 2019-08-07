@@ -1,0 +1,128 @@
+<html>
+	<head>
+		<meta charset = 'UTF-8'>
+		<style>body { background:black; text-align:center; }</style>
+	</head>
+	<body>
+		<canvas id = 'c' width = 640 height = 480></canvas>
+		<script>
+
+			var canvas = document.getElementById('c');
+			var ctx = canvas.getContext("2d");
+			
+			var gameOn = 1; 
+			var board = boardInit();
+			
+			canvas.addEventListener("mousedown", ev => {				
+				ev.preventDefault();
+				
+				if(ev.buttons == 1) {
+					let coord = [Math.floor((ev.clientY - 8) / 16), Math.floor((ev.clientX - 8) / 16)];
+					board[coord[0]][coord[1]].toggle();
+				}
+			});
+			canvas.addEventListener("contextmenu", ev => {
+				ev.preventDefault();
+				gameOn *= -1;
+			});
+			
+			
+			function cellObj() {
+				this.alive = false;
+				this.generation = 0;
+				this.neighborCount = 0;
+				return this;
+			}
+			cellObj.prototype.live = function() {
+					this.alive = true;
+					this.generation++;
+					return true;
+			}
+			cellObj.prototype.die = function() {
+					this.alive = false;
+					this.generation = 0;
+					return false;
+			}
+			cellObj.prototype.toggle = function() {
+					this.alive = this.alive ? this.die() : this.live();
+					return this;
+			}
+
+			function boardInit() {
+				let grid = [];
+				for(let y = 0; y < Math.floor(canvas.height / 16); y++) {
+					grid[y] = [];
+					
+					for(let x = 0; x < Math.floor(canvas.width / 16); x++) {
+						grid[y][x] = new cellObj();
+					}
+				}
+				return grid;
+			}
+			
+			function rules() {
+			
+				let nextGeneration = boardInit(board);
+
+				for(let y = 0; y < board.length; y++) {
+
+					for(let x = 0; x < board[y].length; x++) {
+					
+						let xm = x != 0 ? x - 1 : board[y].length - 2;
+						let xp = x != board[y].length - 1 ? x + 1 : 1;
+						let ym = y != 0 ? y - 1 : board.length - 2;
+						let yp = y != board.length - 1 ? y + 1 : 1;
+						let carray = [[y,xp], [y,xm], [yp,x], [yp,xp], [yp,xm], [ym,x], [ym,xp], [ym,xm]];
+						
+						let neighborCount = 0;
+						
+						carray.forEach(el => {
+							if(board[el[0]][el[1]].alive) { neighborCount++; }
+						});
+						nextGeneration[y][x].neighborCount = neighborCount;
+						nextGeneration[y][x].generation = board[y][x].generation;
+						
+						if(board[y][x].alive && (neighborCount < 2 || neighborCount > 3)) { nextGeneration[y][x].die(); }
+						else if(board[y][x].alive && (neighborCount == 2 || neighborCount == 3)) { nextGeneration[y][x].live(); }
+						else if(!board[y][x].alive && neighborCount == 3) { nextGeneration[y][x].live() } 
+						
+					} 
+
+				}
+				
+				board = nextGeneration;
+			}
+			
+			function drawBoard() {
+			
+				ctx.fillStyle = 'black';
+				ctx.strokeStyle = 'white';
+				
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				
+				for(let y = 0; y < board.length; y++) {
+					
+					ctx.fillStyle = "#" + Math.round(Math.random() * 9) + "" + Math.round(Math.random() * 9) + "" + Math.round(Math.random() * 9) + "" + Math.round(Math.random() * 9) + "" + Math.round(Math.random() * 9) + "" + Math.round(Math.random() * 9);
+				
+					for(let x = 0; x < board[y].length; x++) {
+					 
+						if(board[y][x].alive) { ctx.fillRect(x * 16, y * 16, 16, 16); ctx.strokeText(String(board[y][x].generation), (x * 16) + 3, (y * 16) + 12); }
+						
+					}
+				}
+			}
+
+			setInterval(function() {
+			
+				canvas.width = window.innerWidth - 16;
+				canvas.height = window.innerHeight - 16;
+			
+				drawBoard();
+
+				if(gameOn == 1) { rules(); }
+
+			}, 100);
+			
+		</script>
+	</body>
+</html>
