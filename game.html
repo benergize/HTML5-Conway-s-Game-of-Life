@@ -2,16 +2,16 @@
 	<head>
 		<meta charset = 'UTF-8'>
 		<style>body { background:black; text-align:center; }</style>
+		<title>Conway's Game of Life</title>
 	</head>
 	<body>
 		<canvas id = 'c' width = 640 height = 480></canvas>
 		<script>
-
+		
 			var canvas = document.getElementById('c');
 			var ctx = canvas.getContext("2d");
 			
 			var gameOn = 1; 
-			var board = boardInit();
 			
 			canvas.addEventListener("mousedown", ev => {				
 				ev.preventDefault();
@@ -27,34 +27,48 @@
 			});
 			
 			
-			function cellObj() {
-				this.alive = false;
-				this.generation = 0;
-				this.neighborCount = 0;
+			function cellObj(alive = false, generation = 0, neighborCount = 0) {
+				this.alive = alive;
+				this.generation = generation;
+				this.neighborCount = neighborCount;
 				return this;
 			}
 			cellObj.prototype.live = function() {
-					this.alive = true;
-					this.generation++;
-					return true;
+				this.alive = true;
+				this.generation++;
+				return true;
 			}
 			cellObj.prototype.die = function() {
-					this.alive = false;
-					this.generation = 0;
-					return false;
+				this.alive = false;
+				this.generation = 0;
+				return false;
 			}
 			cellObj.prototype.toggle = function() {
-					this.alive = this.alive ? this.die() : this.live();
-					return this;
+				this.alive = this.alive ? this.die() : this.live();
+				return this;
 			}
-
-			function boardInit() {
+			
+			function boardInit(oldBoard = []) {
+			
 				let grid = [];
 				for(let y = 0; y < Math.floor(canvas.height / 16); y++) {
 					grid[y] = [];
 					
 					for(let x = 0; x < Math.floor(canvas.width / 16); x++) {
+					
 						grid[y][x] = new cellObj();
+					
+						if(oldBoard.length !== 0 && typeof oldBoard[y] !== "undefined") {
+						
+							if(typeof oldBoard[y][x] !== "undefined") {
+							
+								let oldCell = oldBoard[y][x];
+								grid[y][x] = new cellObj(oldCell.alive, oldCell.generation, oldCell.neighborCount);
+							}
+						}
+						else {
+							
+						}
 					}
 				}
 				return grid;
@@ -62,11 +76,10 @@
 			
 			function rules() {
 			
-				let nextGeneration = boardInit(board);
-
+				let nextGeneration = boardInit(board); 
+				
 				for(let y = 0; y < board.length; y++) {
-
-					for(let x = 0; x < board[y].length; x++) {
+					for(let x = 0; x < board[y].length; x++) { 
 					
 						let xm = x != 0 ? x - 1 : board[y].length - 2;
 						let xp = x != board[y].length - 1 ? x + 1 : 1;
@@ -87,7 +100,6 @@
 						else if(!board[y][x].alive && neighborCount == 3) { nextGeneration[y][x].live() } 
 						
 					} 
-
 				}
 				
 				board = nextGeneration;
@@ -106,22 +118,45 @@
 				
 					for(let x = 0; x < board[y].length; x++) {
 					 
-						if(board[y][x].alive) { ctx.fillRect(x * 16, y * 16, 16, 16); ctx.strokeText(String(board[y][x].generation), (x * 16) + 3, (y * 16) + 12); }
+						if(board[y][x].alive) { 
+							ctx.fillRect(x * 16, y * 16, 16, 16); 
+							ctx.strokeText(board[y][x].generation < 99 ? String(board[y][x].generation) : "9x", (x * 16) + 3, (y * 16) + 12); 
+						}
 						
 					}
 				}
+				
+				ctx.fillStyle = 'white';
+				
+				ctx.fillText("Right click to toggle rules, left click to toggle life.",16, canvas.height - 16);
 			}
-
-			setInterval(function() {
 			
+			
+			
+			window.onload = function() {
+				
 				canvas.width = window.innerWidth - 16;
 				canvas.height = window.innerHeight - 16;
+				
+				board = boardInit(); 
+				
+				setInterval(function() {
+				
+					
+					drawBoard();
+					if(gameOn == 1) { rules(); }
+					
+				}, 100);
+			}
 			
+			window.onresize = function() {
+			
+				
+				canvas.width = window.innerWidth - 16;
+				canvas.height = window.innerHeight - 16;
+				board = boardInit(board); 
 				drawBoard();
-
-				if(gameOn == 1) { rules(); }
-
-			}, 100);
+			}
 			
 		</script>
 	</body>
